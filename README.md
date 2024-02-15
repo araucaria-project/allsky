@@ -10,4 +10,6 @@ Your allsky is accessible under the link http://ip_address/public.php . Go to Mo
 
 The script will also download latest GOES satellite images for OCM and save in the /data/misc/satellite directory.
 
+You should also go to Editor (on the allsky webpage) and change DAYS_TO_KEEP to 1 (to save the memory of RPi)
+
 TBD: after the internet lost module is automatically disabled (timeout limit), it should be fixed somehow.
