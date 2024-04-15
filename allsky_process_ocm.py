@@ -123,7 +123,16 @@ def process_ocm(params,event):
 #download GOES-16 satellite images of South America from https://cdn.star.nesdis.noaa.gov/GOES16/ABI/SECTOR/ssa/GEOCOLOR/ for last 3 hours and edit them
 	
 def edit_images(images,dates):
-    sites_dic={"OCA":[270,270,"*","red"],"Antofagasta":[250,180,"s","magenta"],"Tal-Tal":[240,330,"s","yellow"],"Llullaillaco":[430,270,"^","green"],"Copiapo":[250,530,"s","cyan"]}
+    sites_dic={
+        "OCA":[270,270,"*","red"],
+        "Antofagasta":[250,180,"s","magenta"],
+        "Tal-Tal":[240,330,"s","yellow"],
+        "Llullaillaco":[430,270,"^","green"],
+        "Copiapo":[250,530,"s","cyan"]
+    }
+    circles_dict = {
+        "Clouds alt = 20km @ 35°": [270,270,27,"red"],  # r = 27px ≈ 31km (≈ 20km / tan(35°))
+    }
 	
 		
     #with imageio.get_writer('satellite.gif', mode='I',duration=500) as writer:
@@ -137,8 +146,11 @@ def edit_images(images,dates):
             for i,site in enumerate(sites_dic):
                 (x,y,marker,color) = sites_dic[site]
                 mpl.pyplot.plot(x,y,marker,color=color,markersize=10)
-                
                 mpl.pyplot.text(x-70,y,site,c=color)
+            for txt, (x,y,r,color) in circles_dict.items():
+                mpl.pyplot.gca().add_patch(Circle((x,y),r,edgecolor=color,facecolor='none', lw=1))
+                mpl.pyplot.text(x,y - r - 4, txt, c=color)
+
             mpl.pyplot.text(20,580,'UT: '+dates[j],c='red',fontsize='x-large')
             mpl.pyplot.text(500,580,'GOES-16 satellite',c='yellow')
             frame = mpl.pyplot.gca()
