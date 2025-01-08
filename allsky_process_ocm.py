@@ -176,10 +176,17 @@ def satellite():
     day_of_year = str(datetime.datetime.utcnow().timetuple().tm_yday)#day of year now
     day_of_year_1 = str((datetime.datetime.utcnow()-datetime.timedelta(hours=1)).timetuple().tm_yday)#day of year one hour ago
     #day_of_year_2 = str((datetime.datetime.utcnow()-datetime.timedelta(hours=2)).timetuple().tm_yday)#day of year two hours ago
-    if int(day_of_year) < 100:
+
+    if int(day_of_year) < 10:
+        day_of_year='00'+day_of_year
+
+    elif int(day_of_year) < 100:
         day_of_year='0'+day_of_year
 		
-    if int(day_of_year_1) < 100:
+    if int(day_of_year_1) < 10:
+        day_of_year_1='00'+day_of_year_1
+		
+    elif int(day_of_year_1) < 100:
         day_of_year_1='0'+day_of_year_1
 		
     #if int(day_of_year_2)  < 100:
