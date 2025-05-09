@@ -168,8 +168,8 @@ def edit_images(images,dates):
 
 def satellite():
     dr = '/data/misc/GOES_satellite/'
-    image_suffix = '_GOES16-ABI-ssa-GEOCOLOR-7200x4320.jpg'
-    image_suffix_2 = '_GOES16-ABI-ssa-GEOCOLOR-600x600.jpg'
+    image_suffix = '_GOES19-ABI-ssa-GEOCOLOR-7200x4320.jpg'
+    image_suffix_2 = '_GOES19-ABI-ssa-GEOCOLOR-600x600.jpg'
     minutes = ['00','10','20','30','40','50']
     czas = time.strftime('%Y/%m/%d %H:%M:%S',time.gmtime())
     night = czas.split(' ')[0].replace('/','',2)
@@ -224,17 +224,17 @@ def satellite():
 	
     for minute in minutes:
         if not (os.access(dr+date+minute+image_suffix,os.R_OK)):
-            cmd='wget --timeout=5 -t 1 -P \"'+dr+'\" https://cdn.star.nesdis.noaa.gov/GOES16/ABI/SECTOR/ssa/GEOCOLOR/'+date+minute+image_suffix 
+            cmd='wget --timeout=5 -t 1 -P \"'+dr+'\" https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/ssa/GEOCOLOR/'+date+minute+image_suffix 
             os.system(cmd)
         if (os.access(dr+date+minute+image_suffix,os.R_OK)):
             edit_images([dr+date+minute+image_suffix],[date_to_display+':'+minute])
         '''if not (os.access(dr+date_1+minute+image_suffix,os.R_OK)):
-            cmd='wget --timeout=5 -t 1 -P \"'+dr+'\" https://cdn.star.nesdis.noaa.gov/GOES16/ABI/SECTOR/ssa/GEOCOLOR/'+date_1+minute+image_suffix 
+            cmd='wget --timeout=5 -t 1 -P \"'+dr+'\" https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/ssa/GEOCOLOR/'+date_1+minute+image_suffix 
             os.system(cmd)
         if (os.access(dr+date_1+minute+image_suffix,os.R_OK)):
             edit_images([dr+date_1+minute+image_suffix],[date_to_display_1+':'+minute])
         if not (os.access(dr+date_2+minute+image_suffix,os.R_OK)):
-            cmd='wget --timeout=10 -t 1 -P \"'+dr+'\" https://cdn.star.nesdis.noaa.gov/GOES16/ABI/SECTOR/ssa/GEOCOLOR/'+date_2+minute+image_suffix 
+            cmd='wget --timeout=10 -t 1 -P \"'+dr+'\" https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/ssa/GEOCOLOR/'+date_2+minute+image_suffix 
             os.system(cmd)
         if (os.access(dr+date_2+minute+image_suffix,os.R_OK)):
             edit_images([dr+date_2+minute+image_suffix],[date_to_display_2+':'+minute])'''
