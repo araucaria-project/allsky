@@ -10,11 +10,34 @@ mpl.rcParams['figure.dpi']= 300
 from scipy import ndimage
 import allsky_shared
 import os
+import shutil
+import cv2
 import numpy as np
 import time
 
 #OCM customized allsky images
 #pwielgor@camk.edu.pl, 8.02.2024
+
+# RAW16 frames: the camera's 16-bit data as FITS, kept RAW_KEEP_DAYS days.
+# allsky's own loadimage reads the file with cv2.imread() and gets 8 bits only,
+# so the 16-bit file is read here again, before saveimage overwrites it.
+RAW_PATH = '/data/misc/allsky_raw/'
+RAW_KEEP_DAYS = 7
+# FITS card, environment variable from the capture program, type, comment
+RAW_CARDS = [
+    ('EXPTIME', 'AS_EXPOSURE_US', float, 'exposure [s]'),
+    ('AUTOEXP', 'AS_AUTOEXPOSURE', int, 'auto exposure on (1) / off (0)'),
+    ('GAIN', 'AS_GAIN', float, 'camera gain setting'),
+    ('AUTOGAIN', 'AS_AUTOGAIN', int, 'auto gain on (1) / off (0)'),
+    ('CCD-TEMP', 'AS_TEMPERATURE_C', float, 'sensor temperature [C]'),
+    ('BINNING', 'AS_BIN', int, 'binning'),
+    ('BITDEPTH', 'AS_BIT_DEPTH', int, 'bit depth'),
+    ('FLIP', 'AS_FLIP', str, 'image flip'),
+    ('CAPMEAN', 'AS_MEAN', float, 'mean from the capture program (auto exposure)'),
+    ('DARKFRM', 'AS_DARKFRAME', int, 'dark frame (1) / sky (0)'),
+    ('CAPDATE', 'AS_DATE', str, 'exposure start date, RPi local clock'),
+    ('CAPTIME', 'AS_TIME', str, 'exposure start time HHMMSS, RPi local clock'),
+]
 
 metaData = {
     "name": "AllSKY OCM process pipeline",
@@ -72,12 +95,18 @@ def process_ocm(params,event):
 
     if not os.access(path+folder,os.R_OK):
         os.mkdir(path+folder)
-    
+
+    try:
+        save_raw(folder, filename.replace('.jpg', '.fits'))
+    except Exception as e:
+        allsky_shared.log(0, 'ERROR: allsky_process_ocm: raw FITS not saved: ' + str(e))
+
     img = allsky_shared.image[10:990,290:1270]
     if gray:
         img = np.mean(img,axis=2)
         
-    image = ndimage.rotate(img, -30, reshape=False)
+    # -39.1 puts north straight up (camera model fit on stars, 2026-11-06; -30 left it at -9.1 deg)
+    image = ndimage.rotate(img, -39.1, reshape=False)
     fig, ax = plt.subplots()
 
     ax.cla()
@@ -120,6 +149,57 @@ def process_ocm(params,event):
     except:
         pass
     
+def save_raw(folder, filename):
+    """
+    Save the current frame with its full bit depth as a FITS file.
+
+    Reads allsky's current image file again with cv2.IMREAD_UNCHANGED. Only a
+    16-bit frame (camera Image Type RAW16, file name *.png) is saved; an 8-bit
+    frame (jpg mode) is skipped. The data are written as the camera gives them
+    (the Bayer mosaic, not debayered), Rice compressed, to
+    RAW_PATH/<folder>/<filename>, with the capture values (exposure, gain,
+    sensor temperature, ...) in the header. Day folders older than
+    RAW_KEEP_DAYS are deleted.
+
+    Parameters
+    ----------
+    folder : str
+        Day folder, YYYYMMDD (UT), the same as in the jpg archive.
+    filename : str
+        File name, YYYYMMDD_HHMM.fits (UT), the same as the archive jpg.
+    """
+    from astropy.io import fits
+
+    raw = cv2.imread(allsky_shared.CURRENTIMAGEPATH, cv2.IMREAD_UNCHANGED)
+    if raw is None:
+        raise ValueError('cannot read ' + allsky_shared.CURRENTIMAGEPATH)
+    if raw.dtype != np.uint16:
+        return
+
+    hdr = fits.Header()
+    hdr['DATE-UT'] = (folder + '_' + filename[9:13], 'UT of processing, YYYYMMDD_HHMM')
+    hdr['ORIGFILE'] = (os.path.basename(allsky_shared.CURRENTIMAGEPATH), 'allsky image file')
+    for card, var, kind, comment in RAW_CARDS:
+        value = os.environ.get(var)
+        if value is None:
+            continue
+        value = kind(value)
+        if card == 'EXPTIME':
+            value = value / 1e6
+        hdr[card] = (value, comment)
+
+    os.makedirs(RAW_PATH + folder, exist_ok=True)
+    out = RAW_PATH + folder + '/' + filename
+    hdu = fits.CompImageHDU(raw, header=hdr, compression_type='RICE_1')
+    fits.HDUList([fits.PrimaryHDU(), hdu]).writeto(out + '.tmp', overwrite=True)
+    os.replace(out + '.tmp', out)
+
+    oldest = (datetime.datetime.utcnow() - datetime.timedelta(days=RAW_KEEP_DAYS)).strftime('%Y%m%d')
+    for d in os.listdir(RAW_PATH):
+        if len(d) == 8 and d.isdigit() and d < oldest:
+            shutil.rmtree(RAW_PATH + d)
+
+
 #download GOES-16 satellite images of South America from https://cdn.star.nesdis.noaa.gov/GOES16/ABI/SECTOR/ssa/GEOCOLOR/ for last 3 hours and edit them
 	
 def edit_images(images,dates):
